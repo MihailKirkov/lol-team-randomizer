@@ -14,7 +14,7 @@ interface TeamDisplayProps {
 
 const roleEmojis: Record<string, string> = {
   Top: "🛡️",
-  Jungle: "🌲",
+  Jungle: "⚔️",
   Mid: "🧙",
   ADC: "🎯",
   Support: "💉",
@@ -26,30 +26,6 @@ const roleGradients: Record<string, string> = {
   Mid: "from-purple-500/10 to-purple-600/5",
   ADC: "from-red-500/10 to-red-600/5",
   Support: "from-emerald-500/10 to-emerald-600/5",
-}
-
-const roleHoverShadows: Record<string, string> = {
-  Top: "hover:shadow-blue-500/10",
-  Jungle: "hover:shadow-green-500/10",
-  Mid: "hover:shadow-purple-500/10",
-  ADC: "hover:shadow-red-500/10",
-  Support: "hover:shadow-emerald-500/10",
-}
-
-const roleHoverBorders: Record<string, string> = {
-  Top: "hover:border-blue-500 hover:shadow-blue-500/20",
-  Jungle: "hover:border-green-500 hover:shadow-green-500/20",
-  Mid: "hover:border-purple-500 hover:shadow-purple-500/20",
-  ADC: "hover:border-red-500 hover:shadow-red-500/20",
-  Support: "hover:border-emerald-500 hover:shadow-emerald-500/20",
-}
-
-const roleHoverTextColor: Record<string, string> = {
-  Top: "group-hover:text-blue-400",
-  Jungle: "group-hover:text-green-400",
-  Mid: "group-hover:text-purple-400",
-  ADC: "group-hover:text-red-400",
-  Support: "group-hover:text-emerald-400",
 }
 
 export function TeamDisplay({ teams, lockedPlayers, onToggleLock }: TeamDisplayProps) {
@@ -98,7 +74,7 @@ export function TeamDisplay({ teams, lockedPlayers, onToggleLock }: TeamDisplayP
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: teamIdx * 0.1 + idx * 0.05, type: "spring", stiffness: 300 }}
                     whileHover={{ scale: 1.02, x: 4 }}
-                    className={`flex items-center justify-between p-3 rounded-lg bg-linear-270 ${roleGradients[player.role]} backdrop-blur-sm border border-transparent transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-lg ${roleHoverBorders[player.role]}`}
+                    className={`flex items-center justify-between p-3 rounded-lg bg-gradient-to-r ${roleGradients[player.role]} backdrop-blur-sm border border-transparent hover:border-neon-cyan/30 transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-lg hover:shadow-neon-cyan/10`}
                   >
                     <div className="flex items-center gap-3">
                       <motion.span
@@ -109,10 +85,8 @@ export function TeamDisplay({ teams, lockedPlayers, onToggleLock }: TeamDisplayP
                         {roleEmojis[player.role]}
                       </motion.span>
                       <div>
-                        <p className={`font-semibold text-foreground`}>
-                          {player.name}
-                        </p>
-                        <p className={`text-sm text-muted-foreground ${roleHoverTextColor[player.role]} transition-all`}>{player.role}</p>
+                        <p className="font-semibold text-foreground">{player.name}</p>
+                        <p className="text-sm text-muted-foreground">{player.role}</p>
                       </div>
                     </div>
                     <motion.button
