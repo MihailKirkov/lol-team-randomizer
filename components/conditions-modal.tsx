@@ -54,17 +54,16 @@ export function ConditionsModal({ open, onOpenChange, players, conditions, onCon
           ) : (
             players.map((player) => (
               <div key={player} className="p-4 rounded-lg bg-secondary/30 space-y-3">
-                <h4 className="font-bold text-foreground">{player}</h4>
+                <h4 className="font-semibold text-foreground">{player}</h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {roles.map((role) => (
-                    <div key={role} className="flex items-center justify-center p-2 cursor-pointer rounded-md"  onClick={() => handleToggleRole(player,role)}>
-                      {/* <Checkbox
+                    <div key={role} className="flex items-center gap-2">
+                      <Checkbox
                         id={`${player}-${role}`}
                         checked={isRoleExcluded(player, role)}
                         onCheckedChange={() => handleToggleRole(player, role)}
-                      /> */}
-                      <Label htmlFor={`${player}-${role}`}
-                        className={`text-sm cursor-pointer ${isRoleExcluded(player, role) ? "text-red-500 font-bold line-through" : ""}`}>
+                      />
+                      <Label htmlFor={`${player}-${role}`} className="text-sm cursor-pointer">
                         {role}
                       </Label>
                     </div>

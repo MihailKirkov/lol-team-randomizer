@@ -169,3 +169,20 @@
 .neon-glow:hover {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Add blue and red glow effects for team win buttons */
+.neon-glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.neon-glow-blue:hover {
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), 0 0 35px rgba(59, 130, 246, 0.3);
+}
+
+.neon-glow-red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.neon-glow-red:hover {
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.5), 0 0 35px rgba(239, 68, 68, 0.3);
+}

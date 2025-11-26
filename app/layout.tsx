@@ -8,7 +8,8 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'LoL Team Randomizer',
-  description: 'made by Mihail Kirkov',
+  description: 'Made By Mihail K.',
+  generator: 'Next.js',
   icons: {
     icon: [
       {
