@@ -7,7 +7,7 @@
 -- This is a placeholder - the real admin will be created after they sign up
 insert into public.admin_profiles (id, email, is_admin)
 values 
-  ('00000000-0000-0000-0000-000000000000', 'admin@example.com', true)
+  ('09ff62c9-c490-4281-a9c5-15385db46527', 'mihailkirkov04@gmail.com', true)
 on conflict (id) do nothing;
 
 -- Note: After signing up as admin@example.com, you'll need to run this:

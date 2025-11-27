@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createBrowserClient } from "@supabase/ssr"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { motion } from "framer-motion"
-import { BarChart3, TrendingUp, Users, Trophy, Target, Home } from "lucide-react"
+import { BarChart3, TrendingUp, Users, Trophy, Target, Home, Search } from "lucide-react"
 import Link from "next/link"
 import {
   Bar,
@@ -30,10 +31,13 @@ import {
 interface Player {
   id: string
   name: string
+  alias: string | null
   wins: number
   losses: number
   games_played: number
   win_rate: number
+  riot_tier: string | null
+  riot_rank: string | null
 }
 
 type StatType = "wins" | "losses" | "games_played" | "win_rate"
@@ -47,6 +51,19 @@ const STAT_LABELS: Record<StatType, string> = {
 
 const COLORS = ["#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#6366f1"]
 
+const TIER_COLORS: Record<string, string> = {
+  IRON: "#6b7280",
+  BRONZE: "#92400e",
+  SILVER: "#71717a",
+  GOLD: "#eab308",
+  PLATINUM: "#06b6d4",
+  EMERALD: "#10b981",
+  DIAMOND: "#3b82f6",
+  MASTER: "#8b5cf6",
+  GRANDMASTER: "#ec4899",
+  CHALLENGER: "#f59e0b",
+}
+
 export default function StatisticsPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
@@ -54,11 +71,9 @@ export default function StatisticsPage() {
     new Set(["wins", "losses", "games_played", "win_rate"]),
   )
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const supabase = createClient()
 
   useEffect(() => {
     loadPlayers()
@@ -98,6 +113,11 @@ export default function StatisticsPage() {
     setSelectedStats(newSelected)
   }
 
+  const filteredPlayers = players.filter((player) => {
+    const query = searchQuery.toLowerCase()
+    return player.name.toLowerCase().includes(query) || (player.alias && player.alias.toLowerCase().includes(query))
+  })
+
   const selectedPlayerData = players.filter((p) => selectedPlayers.has(p.id))
 
   // Prepare data for different chart types
@@ -131,7 +151,7 @@ export default function StatisticsPage() {
 
   const totalStats = {
     totalPlayers: players.length,
-    totalGames: players.reduce((sum, p) => sum + p.games_played, 0) / 2, // Divide by 2 since each game counts twice
+    totalGames: players.reduce((sum, p) => sum + p.games_played, 0) / 2,
     avgWinRate: players.length > 0 ? players.reduce((sum, p) => sum + Number(p.win_rate), 0) / players.length : 0,
     topPlayer: players.length > 0 ? players[0] : null,
   }
@@ -149,10 +169,7 @@ export default function StatisticsPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="fixed w-screen h-screen top-0 left-0 bg-linear-to-b from-neon-cyan/90 via-transparent to-neon-cyan/30 cursor-not-allowed z-10 flex items-center justify-center text-5xl text-center font-bold">
-          UNDER CONSTRUCTION....
-      </div>
-      <div className="mx-auto max-w-7xl space-y-8 blur-[3px]">
+      <div className="mx-auto max-w-7xl space-y-8">
         <motion.header
           className="flex items-center justify-between"
           initial={{ opacity: 0, y: -20 }}
@@ -160,7 +177,7 @@ export default function StatisticsPage() {
         >
           <div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent animate-gradient">
                 Player Statistics
               </span>
             </h1>
@@ -255,9 +272,18 @@ export default function StatisticsPage() {
                   <Users className="h-5 w-5 text-neon-cyan" />
                   Select Players
                 </CardTitle>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or alias..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-background/50 border-border/50"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                {players.map((player) => (
+                {filteredPlayers.map((player) => (
                   <div
                     key={player.id}
                     className={`flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer hover:bg-secondary/50 ${
@@ -270,13 +296,31 @@ export default function StatisticsPage() {
                       onCheckedChange={() => togglePlayer(player.id)}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{player.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{player.name}</p>
+                        {player.riot_tier && player.riot_rank && (
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                            style={{
+                              backgroundColor: `${TIER_COLORS[player.riot_tier] || "#6b7280"}22`,
+                              color: TIER_COLORS[player.riot_tier] || "#6b7280",
+                            }}
+                          >
+                            {player.riot_tier[0]}
+                            {player.riot_rank}
+                          </span>
+                        )}
+                      </div>
+                      {player.alias && <p className="text-xs text-muted-foreground/70 italic">aka {player.alias}</p>}
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {player.wins}W - {player.losses}L ({player.win_rate}%)
                       </p>
                     </div>
                   </div>
                 ))}
+                {filteredPlayers.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">No players found</p>
+                )}
               </CardContent>
             </Card>
 
@@ -470,27 +514,56 @@ export default function StatisticsPage() {
                                 className="border-b border-border/30 hover:bg-secondary/30 transition-colors"
                               >
                                 <td className="py-3 px-4">
-                                  <span className="text-muted-foreground">{index + 1}</span>
+                                  <span className="text-sm font-mono text-muted-foreground">{index + 1}</span>
                                 </td>
                                 <td className="py-3 px-4">
-                                  <span className="font-medium">{player.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">{player.name}</span>
+                                        {player.riot_tier && player.riot_rank && (
+                                          <span
+                                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                            style={{
+                                              backgroundColor: `${TIER_COLORS[player.riot_tier] || "#6b7280"}22`,
+                                              color: TIER_COLORS[player.riot_tier] || "#6b7280",
+                                            }}
+                                          >
+                                            {player.riot_tier[0]}
+                                            {player.riot_rank}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {player.alias && (
+                                        <p className="text-xs text-muted-foreground/70 italic">aka {player.alias}</p>
+                                      )}
+                                    </div>
+                                  </div>
                                 </td>
                                 {selectedStats.has("games_played") && (
-                                  <td className="text-center py-3 px-4">{player.games_played}</td>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-medium">{player.games_played}</span>
+                                  </td>
                                 )}
                                 {selectedStats.has("wins") && (
-                                  <td className="text-center py-3 px-4">
-                                    <span className="text-green-400 font-semibold">{player.wins}</span>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-medium text-green-400">{player.wins}</span>
                                   </td>
                                 )}
                                 {selectedStats.has("losses") && (
-                                  <td className="text-center py-3 px-4">
-                                    <span className="text-red-400 font-semibold">{player.losses}</span>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-medium text-red-400">{player.losses}</span>
                                   </td>
                                 )}
                                 {selectedStats.has("win_rate") && (
-                                  <td className="text-center py-3 px-4">
-                                    <span className="text-cyan-400 font-semibold">{player.win_rate}%</span>
+                                  <td className="py-3 px-4 text-center">
+                                    <span
+                                      className={`font-medium ${
+                                        Number(player.win_rate) >= 50 ? "text-green-400" : "text-red-400"
+                                      }`}
+                                    >
+                                      {player.win_rate}%
+                                    </span>
                                   </td>
                                 )}
                               </tr>

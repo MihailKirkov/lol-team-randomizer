@@ -20,7 +20,7 @@ const REGION_TO_ROUTING: Record<RiotRegion, RiotRoutingValue> = {
 
 export interface RiotSummoner {
   id: string // Encrypted summoner ID
-  accountId?: string
+  accountId: string
   puuid: string
   profileIconId: number
   revisionDate: number
@@ -88,8 +88,11 @@ export async function fetchSummonerByName(
   }
 }
 
-export async function fetchRankByPuuid(
-  puuid: string,
+/**
+ * Fetch rank data for a summoner by encrypted summoner ID
+ */
+export async function fetchSummonerRank(
+  encryptedSummonerId: string,
   region: RiotRegion = "na1",
 ): Promise<PlayerRankData | null> {
   if (!RIOT_API_KEY) {
@@ -98,7 +101,7 @@ export async function fetchRankByPuuid(
   }
 
   try {
-    const url = `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`
+    const url = `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encryptedSummonerId}`
 
     const response = await fetch(url, {
       headers: {
@@ -107,15 +110,18 @@ export async function fetchRankByPuuid(
     })
 
     if (!response.ok) {
-      const errorBody = await response.text()
-      console.error(`[v0] Riot API error (rank by puuid): ${response.status} ${response.statusText}`, errorBody)
+      console.error(`[v0] Riot API error: ${response.status} ${response.statusText}`)
       return null
     }
 
     const entries: RiotLeagueEntry[] = await response.json()
 
+    // Find RANKED_SOLO_5x5 queue (most common ranked queue)
     const soloQueue = entries.find((entry) => entry.queueType === "RANKED_SOLO_5x5")
-    if (!soloQueue) return null
+
+    if (!soloQueue) {
+      return null
+    }
 
     return {
       tier: soloQueue.tier,
@@ -125,7 +131,7 @@ export async function fetchRankByPuuid(
       losses: soloQueue.losses,
     }
   } catch (error) {
-    console.error("[v0] Error fetching rank data by puuid:", error)
+    console.error("[v0] Error fetching rank data:", error)
     return null
   }
 }
@@ -175,7 +181,6 @@ export async function fetchAccountByRiotId(
 /**
  * Fetch summoner data by PUUID
  */
-
 export async function fetchSummonerByPuuid(puuid: string, region: RiotRegion = "na1"): Promise<RiotSummoner | null> {
   if (!RIOT_API_KEY) {
     console.error("[v0] RIOT_API_KEY is not configured")
@@ -192,7 +197,6 @@ export async function fetchSummonerByPuuid(puuid: string, region: RiotRegion = "
         "X-Riot-Token": RIOT_API_KEY,
       },
     })
-    console.log('[v0] Riot API response body:', response.clone().body);
 
     if (!response.ok) {
       const errorBody = await response.text()
@@ -233,16 +237,22 @@ export async function syncRiotAccountData(riotId: string, region: RiotRegion = "
 
   console.log("[v0] Account PUUID:", account.puuid)
 
-  // Step 2: (optional) Get summoner data using PUUID – may not include id/accountId for some players
+  // Step 2: Get summoner data using PUUID
   const summoner = await fetchSummonerByPuuid(account.puuid, region)
   if (!summoner) {
-    console.warn("[v0] Failed to fetch summoner data, continuing with account + rank only")
-  } else {
-    console.log("[v0] Successfully fetched summoner data:", JSON.stringify(summoner, null, 2))
+    console.error("[v0] Failed to fetch summoner data")
+    return null
   }
 
-  // Step 3: Get rank data using **PUUID**, not summonerId
-  const rankData = await fetchRankByPuuid(account.puuid, region)
+  if (!summoner.id) {
+    console.error("[v0] Summoner ID is missing from response:", summoner)
+    return null
+  }
+
+  console.log("[v0] Summoner ID for rank lookup:", summoner.id)
+
+  // Step 3: Get rank data using encrypted summoner ID
+  const rankData = await fetchSummonerRank(summoner.id, region)
 
   console.log("[v0] Riot account sync complete")
 
@@ -252,7 +262,6 @@ export async function syncRiotAccountData(riotId: string, region: RiotRegion = "
     rankData,
   }
 }
-
 
 /**
  * Get rank display string (e.g., "Gold II", "Master", "Unranked")

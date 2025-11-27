@@ -86,6 +86,7 @@ export function TeamDisplay({ teams, lockedPlayers, onToggleLock }: TeamDisplayP
                       </motion.span>
                       <div>
                         <p className="font-semibold text-foreground">{player.name}</p>
+                        {player.alias && <p className="text-xs text-muted-foreground italic">"{player.alias}"</p>}
                         <p className="text-sm text-muted-foreground">{player.role}</p>
                       </div>
                     </div>

@@ -26,16 +26,11 @@ export function RiotAccountLink({
 }: RiotAccountLinkProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [summonerName, setSummonerName] = useState(currentSummonerName || "")
-  const [region, setRegion] = useState(currentRegion || "eun1")
-  console.log('currentRegion:', currentRegion);
+  const [region, setRegion] = useState(currentRegion || "na1")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
   const handleSync = async () => {
-    if (!summonerName.includes("#")) {
-      setError("Enter Riot ID in the format Name#TAG (ex: MegaKill860#EUNE)")
-      return
-    }
     if (!summonerName.trim()) {
       setError("Please enter a summoner name")
       return
@@ -50,11 +45,10 @@ export function RiotAccountLink({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           playerId,
-          riotId: summonerName.trim(),
+          summonerName: summonerName.trim(),
           region,
         }),
       })
-      console.log("Riot sync response:", response)
 
       const data = await response.json()
 
@@ -96,13 +90,13 @@ export function RiotAccountLink({
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label htmlFor="summoner-name" className="text-slate-300">
-              Riot ID
+              Summoner Name
             </Label>
             <Input
               id="summoner-name"
               value={summonerName}
               onChange={(e) => setSummonerName(e.target.value)}
-              placeholder="GameName#TAG (example: MegaKill860#EUNE)"
+              placeholder="Enter summoner name..."
               className="border-cyan-500/20 bg-slate-800/50 text-slate-100"
             />
           </div>

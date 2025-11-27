@@ -4,14 +4,14 @@ import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { playerId, riotId, region } = await request.json()
+    const { playerId, summonerName, region } = await request.json()
 
-    if (!playerId || !riotId) {
+    if (!playerId || !summonerName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     // Sync Riot data
-    const riotData = await syncRiotAccountData(riotId, region as RiotRegion)
+    const riotData = await syncRiotAccountData(summonerName, region as RiotRegion)
 
     if (!riotData) {
       return NextResponse.json(
@@ -23,14 +23,10 @@ export async function POST(request: NextRequest) {
     // Update player in database
     const supabase = await createServerClient()
 
-// After: const riotData = await syncRiotAccountData(riotId, region as RiotRegion)
-
     const updateData: any = {
-      riot_summoner_name: riotId,
-      // use account PUUID as main source of truth
-      riot_puuid: riotData.account.puuid,
-      // summoner might be null or missing id on some accounts
-      riot_summoner_id: riotData.summoner?.id ?? "",
+      riot_summoner_name: summonerName,
+      riot_puuid: riotData.summoner.puuid,
+      riot_summoner_id: riotData.summoner.id,
       riot_region: region,
       riot_last_synced: new Date().toISOString(),
     }

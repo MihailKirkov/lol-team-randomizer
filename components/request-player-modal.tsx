@@ -33,6 +33,7 @@ export function RequestPlayerModal({
 }: RequestPlayerModalProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [playerName, setPlayerName] = useState("")
+  const [alias, setAlias] = useState("")
   const [riotId, setRiotId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +86,7 @@ export function RequestPlayerModal({
 
       const { error: insertError } = await supabase.from("player_requests").insert({
         name: playerName.trim(),
+        alias: alias.trim() || null,
         riot_id: riotId.trim() || null,
         status: "pending",
       })
@@ -93,6 +95,7 @@ export function RequestPlayerModal({
 
       setSuccess(true)
       setPlayerName("")
+      setAlias("")
       setRiotId("")
       setTimeout(() => {
         setSuccess(false)
@@ -150,6 +153,18 @@ export function RequestPlayerModal({
                 placeholder="Enter player name..."
                 className="border-cyan-500/20 bg-slate-800/50 text-slate-100 placeholder:text-slate-500"
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="alias" className="text-slate-200">
+                Alias <span className="text-slate-500 text-xs">(optional)</span>
+              </Label>
+              <Input
+                id="alias"
+                value={alias}
+                onChange={(e) => setAlias(e.target.value)}
+                placeholder="Nickname or alternate name..."
+                className="border-cyan-500/20 bg-slate-800/50 text-slate-100 placeholder:text-slate-500"
               />
             </div>
             <div className="space-y-2">

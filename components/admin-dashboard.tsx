@@ -1,18 +1,18 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter } from "next/navigation"
-import { Users, UserPlus, LogOut, Shield, Edit, Trash2, Check, X, Clock, Trophy } from "lucide-react"
+import { Users, UserPlus, LogOut, Shield, Clock, Trophy, Search } from "lucide-react"
 import { motion } from "framer-motion"
-import { RiotAccountLink } from "@/components/riot-account-link"
-import { getRankDisplay, getRankColor } from "@/lib/riot-api"
+import { createClient } from "@/lib/supabase/client"
+import { useAdminPlayers } from "@/hooks/use-admin-players"
+import { useAdminRequests } from "@/hooks/use-admin-requests"
+import { useAdminGameResults } from "@/hooks/use-admin-game-results"
+import { PlayerList } from "@/components/admin/player-list"
+import { AddPlayerForm } from "@/components/admin/add-player-form"
 
 interface Player {
   id: string
@@ -33,6 +33,8 @@ interface Player {
 interface PlayerRequest {
   id: string
   name: string
+  alias?: string
+  riot_id?: string
   status: "pending" | "approved" | "rejected"
   created_at: string
 }
@@ -48,152 +50,47 @@ interface GameResult {
 }
 
 export default function AdminDashboard() {
-  const [players, setPlayers] = useState<Player[]>([])
-  const [requests, setRequests] = useState<PlayerRequest[]>([])
-  const [gameResults, setGameResults] = useState<GameResult[]>([])
-  const [newPlayerName, setNewPlayerName] = useState("")
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editingName, setEditingName] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => {
-    loadPlayers()
-    loadRequests()
-    loadGameResults()
-  }, [])
+  const {
+    players,
+    isLoading: playersLoading,
+    searchQuery,
+    setSearchQuery,
+    loadPlayers,
+    addPlayer,
+    updatePlayer,
+    deletePlayer,
+  } = useAdminPlayers()
 
-  const loadPlayers = async () => {
-    const { data } = await supabase.from("players").select("*").order("name")
-    if (data) setPlayers(data)
-  }
+  const {
+    requests,
+    pendingRequests,
+    isLoading: requestsLoading,
+    loadRequests,
+    approveRequest,
+    rejectRequest,
+  } = useAdminRequests()
 
-  const loadRequests = async () => {
-    const { data } = await supabase.from("player_requests").select("*").order("created_at", { ascending: false })
-    if (data) setRequests(data)
-  }
-
-  const loadGameResults = async () => {
-    const { data } = await supabase.from("game_results").select("*").order("created_at", { ascending: false })
-    if (data) setGameResults(data)
-  }
-
-  const handleAddPlayer = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newPlayerName.trim()) return
-
-    setIsLoading(true)
-    const { error } = await supabase.from("players").insert({ name: newPlayerName.trim() })
-
-    if (!error) {
-      setNewPlayerName("")
-      loadPlayers()
-    }
-    setIsLoading(false)
-  }
-
-  const handleUpdatePlayer = async (id: string) => {
-    if (!editingName.trim()) return
-
-    setIsLoading(true)
-    const { error } = await supabase.from("players").update({ name: editingName.trim() }).eq("id", id)
-
-    if (!error) {
-      setEditingId(null)
-      setEditingName("")
-      loadPlayers()
-    }
-    setIsLoading(false)
-  }
-
-  const handleDeletePlayer = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this player?")) return
-
-    setIsLoading(true)
-    await supabase.from("players").delete().eq("id", id)
-    loadPlayers()
-    setIsLoading(false)
-  }
-
-  const handleApproveRequest = async (request: PlayerRequest) => {
-    setIsLoading(true)
-
-    const { error: playerError } = await supabase.from("players").insert({ name: request.name })
-
-    if (!playerError) {
-      await supabase.from("player_requests").update({ status: "approved" }).eq("id", request.id)
-
-      loadPlayers()
-      loadRequests()
-    }
-    setIsLoading(false)
-  }
-
-  const handleRejectRequest = async (id: string) => {
-    setIsLoading(true)
-    await supabase.from("player_requests").update({ status: "rejected" }).eq("id", id)
-    loadRequests()
-    setIsLoading(false)
-  }
-
-  const handleApproveGameResult = async (gameResult: GameResult) => {
-    setIsLoading(true)
-
-    try {
-      const { error: updateError } = await supabase
-        .from("game_results")
-        .update({
-          status: "approved",
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", gameResult.id)
-
-      if (updateError) {
-        console.error("[v0] Error updating game result:", updateError)
-        throw updateError
-      }
-
-      const { error: statsError } = await supabase.rpc("update_player_statistics", {
-        p_game_result_id: gameResult.id,
-      })
-
-      if (statsError) {
-        console.error("[v0] Error updating player statistics:", statsError)
-        throw statsError
-      }
-
-      await Promise.all([loadGameResults(), loadPlayers()])
-
-      alert("Game result approved and player statistics updated!")
-    } catch (error) {
-      console.error("[v0] Error approving game result:", error)
-      alert("Failed to approve game result. Please check the console for details.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleRejectGameResult = async (id: string) => {
-    setIsLoading(true)
-    await supabase
-      .from("game_results")
-      .update({
-        status: "rejected",
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-    loadGameResults()
-    setIsLoading(false)
-  }
+  const {
+    gameResults,
+    pendingGameResults,
+    isLoading: gameResultsLoading,
+    loadGameResults,
+    approveGameResult,
+    rejectGameResult,
+  } = useAdminGameResults()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/admin/login")
   }
 
-  const pendingRequests = requests.filter((r) => r.status === "pending")
-  const pendingGameResults = gameResults.filter((g) => g.status === "pending")
+  const handleDeletePlayer = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this player?")) return
+    await deletePlayer(id)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
@@ -254,125 +151,31 @@ export default function AdminDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddPlayer} className="flex gap-3">
-                  <Input
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    placeholder="Enter player name..."
-                    className="border-cyan-500/20 bg-slate-800/50 text-slate-100 placeholder:text-slate-500"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !newPlayerName.trim()}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-                  >
-                    Add Player
-                  </Button>
-                </form>
+                <AddPlayerForm onAdd={addPlayer} isLoading={playersLoading} />
               </CardContent>
             </Card>
 
             <Card className="border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl">
               <CardHeader>
                 <CardTitle className="text-cyan-50">All Players</CardTitle>
+                <div className="relative mt-4">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Search by name or alias..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 border-cyan-500/20 bg-slate-800/50 text-slate-100 placeholder:text-slate-500"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {players.map((player) => (
-                    <motion.div
-                      key={player.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center justify-between rounded-lg border border-cyan-500/10 bg-slate-800/30 p-4"
-                    >
-                      {editingId === player.id ? (
-                        <div className="flex flex-1 gap-2">
-                          <Input
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            className="border-cyan-500/20 bg-slate-700/50 text-slate-100"
-                            autoFocus
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdatePlayer(player.id)}
-                            className="bg-green-500 hover:bg-green-600"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingId(null)
-                              setEditingName("")
-                            }}
-                            className="border-slate-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <span className="text-slate-100 font-medium">{player.name}</span>
-                              {player.riot_tier && (
-                                <span className={`text-sm font-semibold ${getRankColor(player.riot_tier)}`}>
-                                  {getRankDisplay(player.riot_tier, player.riot_rank)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex gap-4 mt-1 text-xs text-slate-400">
-                              <span>Games: {player.games_played}</span>
-                              <span className="text-green-400">Wins: {player.wins}</span>
-                              <span className="text-red-400">Losses: {player.losses}</span>
-                              <span>WR: {player.win_rate.toFixed(1)}%</span>
-                            </div>
-                            {player.riot_summoner_name && (
-                              <p className="text-xs text-slate-500 mt-1">
-                                Summoner: {player.riot_summoner_name} ({player.riot_region?.toUpperCase()})
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <RiotAccountLink
-                              playerId={player.id}
-                              playerName={player.name}
-                              currentSummonerName={player.riot_summoner_name}
-                              currentRegion={player.riot_region}
-                              onSync={loadPlayers}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingId(player.id)
-                                setEditingName(player.name)
-                              }}
-                              className="gap-2 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10"
-                            >
-                              <Edit className="h-3 w-3" />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeletePlayer(player.id)}
-                              className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Delete
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </motion.div>
-                  ))}
-                  {players.length === 0 && (
-                    <p className="py-8 text-center text-slate-400">No players yet. Add your first player above!</p>
-                  )}
-                </div>
+                <PlayerList
+                  players={players}
+                  isLoading={playersLoading}
+                  onUpdate={updatePlayer}
+                  onDelete={handleDeletePlayer}
+                  onSync={loadPlayers}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -393,6 +196,8 @@ export default function AdminDashboard() {
                     >
                       <div>
                         <p className="font-medium text-slate-100">{request.name}</p>
+                        {request.alias && <p className="text-sm text-slate-400 italic">Alias: {request.alias}</p>}
+                        {request.riot_id && <p className="text-xs text-slate-500">Riot ID: {request.riot_id}</p>}
                         <p className="text-xs text-slate-400">
                           Requested {new Date(request.created_at).toLocaleDateString()}
                         </p>
@@ -400,22 +205,23 @@ export default function AdminDashboard() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() => handleApproveRequest(request)}
-                          disabled={isLoading}
+                          onClick={() => approveRequest(request, loadPlayers)}
+                          disabled={requestsLoading}
                           className="gap-2 bg-green-500 hover:bg-green-600"
                         >
-                          <Check className="h-3 w-3" />
+                          <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.3 }}>
+                            ✓
+                          </motion.div>
                           Approve
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleRejectRequest(request.id)}
-                          disabled={isLoading}
+                          onClick={() => rejectRequest(request.id)}
+                          disabled={requestsLoading}
                           className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10"
                         >
-                          <X className="h-3 w-3" />
-                          Reject
+                          ✗ Reject
                         </Button>
                       </div>
                     </motion.div>
@@ -446,6 +252,7 @@ export default function AdminDashboard() {
                       >
                         <div>
                           <p className="font-medium text-slate-100">{request.name}</p>
+                          {request.alias && <p className="text-sm text-slate-400 italic">Alias: {request.alias}</p>}
                           <p className="text-xs text-slate-400">
                             Requested {new Date(request.created_at).toLocaleDateString()}
                           </p>
@@ -507,7 +314,7 @@ export default function AdminDashboard() {
 
                         <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
                           <div className="mb-2 flex items-center gap-2">
-                            <X className="h-4 w-4 text-red-400" />
+                            <motion.div whileHover={{ rotate: 90 }}>✗</motion.div>
                             <p className="font-semibold text-red-400">Losing Team</p>
                           </div>
                           <div className="space-y-1">
@@ -524,22 +331,20 @@ export default function AdminDashboard() {
                       <div className="flex justify-end gap-2 pt-2">
                         <Button
                           size="sm"
-                          onClick={() => handleApproveGameResult(gameResult)}
-                          disabled={isLoading}
+                          onClick={() => approveGameResult(gameResult, loadPlayers)}
+                          disabled={gameResultsLoading}
                           className="gap-2 bg-green-500 hover:bg-green-600"
                         >
-                          <Check className="h-3 w-3" />
-                          Approve & Update Stats
+                          ✓ Approve & Update Stats
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleRejectGameResult(gameResult.id)}
-                          disabled={isLoading}
+                          onClick={() => rejectGameResult(gameResult.id)}
+                          disabled={gameResultsLoading}
                           className="gap-2 border-red-500/20 text-red-400 hover:bg-red-500/10"
                         >
-                          <X className="h-3 w-3" />
-                          Reject
+                          ✗ Reject
                         </Button>
                       </div>
                     </motion.div>

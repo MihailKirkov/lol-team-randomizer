@@ -1,6 +1,7 @@
 export interface Player {
   name: string
   role: string
+  alias?: string
 }
 
 export interface Team {
