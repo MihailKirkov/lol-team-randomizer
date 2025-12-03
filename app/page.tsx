@@ -11,7 +11,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/10 via-transparent to-blue-500/10 animate-gradient" />
+        <div className="absolute inset-0 bg-linear-to-br from-neon-cyan/10 via-transparent to-blue-500/10 animate-gradient" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24">
           <motion.div
@@ -27,7 +27,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent animate-gradient">
+              <span className="bg-linear-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent animate-gradient">
                 LoL Team Randomizer
               </span>
             </motion.h1>

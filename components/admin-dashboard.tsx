@@ -93,7 +93,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
               <Shield className="h-6 w-6 text-cyan-400" />
             </div>
             <div>
-              <h1 className="bg-gradient-to-r from-cyan-400 to-cyan-200 bg-clip-text text-3xl font-bold text-transparent">
+              <h1 className="bg-linear-to-r from-cyan-400 to-cyan-200 bg-clip-text text-3xl font-bold text-transparent">
                 Admin Dashboard
               </h1>
               <p className="text-sm text-slate-400">Manage players and requests</p>

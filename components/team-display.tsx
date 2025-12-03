@@ -74,7 +74,7 @@ export function TeamDisplay({ teams, lockedPlayers, onToggleLock }: TeamDisplayP
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: teamIdx * 0.1 + idx * 0.05, type: "spring", stiffness: 300 }}
                     whileHover={{ scale: 1.02, x: 4 }}
-                    className={`flex items-center justify-between p-3 rounded-lg bg-gradient-to-r ${roleGradients[player.role]} backdrop-blur-sm border border-transparent hover:border-neon-cyan/30 transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-lg hover:shadow-neon-cyan/10`}
+                    className={`flex items-center justify-between p-3 rounded-lg bg-linear-to-r ${roleGradients[player.role]} backdrop-blur-sm border border-transparent hover:border-neon-cyan/30 transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-lg hover:shadow-neon-cyan/10`}
                   >
                     <div className="flex items-center gap-3">
                       <motion.span

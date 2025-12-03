@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 import { Plus, Users, LogOut, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { showToast } from "@/lib/toast"
 
 interface Team {
   id: string
@@ -25,7 +26,7 @@ export default function DashboardPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    loadUserAndTeams()
+    loadUserAndTeams();
   }, [])
 
   const loadUserAndTeams = async () => {
@@ -75,6 +76,7 @@ export default function DashboardPage() {
 
       setTeams(teamsWithCounts)
     } catch (error) {
+      showToast("ERROR", "Failed to load teams. Please try again.")
       console.error("Error loading teams:", error)
     } finally {
       setLoading(false)
@@ -105,7 +107,7 @@ export default function DashboardPage() {
         >
           <div>
             <h1 className="text-4xl font-bold">
-              <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent">
                 Dashboard
               </span>
             </h1>

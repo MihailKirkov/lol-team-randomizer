@@ -112,7 +112,7 @@ export function PlayerInput({ players, onPlayersChange, onGenerate, onOpenCondit
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
                   transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
                 >
-                  <div className="group relative flex items-center gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-br from-secondary/70 to-secondary/50 hover:from-secondary hover:to-secondary/80 transition-all duration-300 border border-transparent hover:border-neon-cyan/40 hover:shadow-lg hover:shadow-neon-cyan/10 hover:scale-[1.03]">
+                  <div className="group relative flex items-center gap-2 px-3 py-2.5 rounded-lg bg-linear-to-br from-secondary/70 to-secondary/50 hover:from-secondary hover:to-secondary/80 transition-all duration-300 border border-transparent hover:border-neon-cyan/40 hover:shadow-lg hover:shadow-neon-cyan/10 hover:scale-[1.03]">
                     {editingIndex === idx ? (
                       <div className="flex items-center gap-1 flex-1">
                         <Input

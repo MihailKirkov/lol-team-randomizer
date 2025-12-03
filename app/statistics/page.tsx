@@ -177,7 +177,7 @@ export default function StatisticsPage() {
         >
           <div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent animate-gradient">
+              <span className="bg-linear-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent animate-gradient">
                 Player Statistics
               </span>
             </h1>

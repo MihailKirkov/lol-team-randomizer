@@ -55,7 +55,7 @@ console.log("profileError:", profileError)
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="w-full max-w-md p-6">
         <Card className="border-cyan-500/20 bg-slate-900/50 backdrop-blur-xl">
           <CardHeader className="space-y-3 text-center">

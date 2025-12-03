@@ -95,7 +95,7 @@ export default function TeamPage({ params }: TeamPageProps) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold">
-                <span className="bg-gradient-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-neon-cyan via-blue-400 to-neon-cyan bg-clip-text text-transparent">
                   {team.name}
                 </span>
               </h1>

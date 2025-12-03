@@ -2,6 +2,8 @@
 CREATE TABLE IF NOT EXISTS teams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
+  img TEXT,
+  description TEXT,
   created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -21,29 +23,31 @@ CREATE TABLE IF NOT EXISTS team_members (
 CREATE TABLE IF NOT EXISTS team_players (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   alias TEXT,
-  riot_summoner_name TEXT,
-  riot_region TEXT,
-  riot_puuid TEXT,
-  riot_summoner_id TEXT,
-  riot_tier TEXT,
-  riot_rank TEXT,
-  riot_lp INTEGER DEFAULT 0,
-  riot_wins INTEGER DEFAULT 0,
-  riot_losses INTEGER DEFAULT 0,
-  riot_last_synced TIMESTAMPTZ,
   wins INTEGER DEFAULT 0,
   losses INTEGER DEFAULT 0,
   games_played INTEGER DEFAULT 0,
   win_rate NUMERIC GENERATED ALWAYS AS (
     CASE 
-      WHEN games_played > 0 THEN (wins::NUMERIC / games_played::NUMERIC) * 100
+      WHEN games_played > 0 THEN ROUND((wins::NUMERIC / games_played::NUMERIC) * 100, 2)
       ELSE 0
     END
   ) STORED,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(team_id, player_id)
+);
+
+-- Create team_invite_links table (for managing invite links)
+CREATE TABLE IF NOT EXISTS team_invite_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  link TEXT NOT NULL UNIQUE,
+  created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '7 days',
+  UNIQUE(team_id, link)
 );
 
 -- Create team_invites table (pending invitations)
@@ -84,7 +88,8 @@ CREATE TABLE IF NOT EXISTS team_player_requests (
   requested_by UUID REFERENCES auth.users(id),
   status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(team_id, name)
 );
 
 -- Enable RLS
@@ -92,8 +97,10 @@ ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE team_invite_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_game_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team_player_requests ENABLE ROW LEVEL SECURITY;
+
 
 -- RLS Policies for teams
 CREATE POLICY "Users can view teams they are members of"
@@ -127,40 +134,38 @@ CREATE POLICY "Team admins can delete teams"
   );
 
 -- RLS Policies for team_members
-CREATE POLICY "Users can view team members of their teams"
+CREATE OR REPLACE POLICY "Users can view team members of their teams"
   ON team_members FOR SELECT
   USING (
-    team_id IN (
-      SELECT team_id FROM team_members WHERE user_id = auth.uid()
+    user_id = auth.uid()
+    OR team_id IN (
+      SELECT team_id FROM team_members AS tm
+      WHERE tm.user_id = auth.uid()
     )
   );
 
-CREATE POLICY "Team admins can add members"
-  ON team_members FOR INSERT
-  WITH CHECK (
-    team_id IN (
-      SELECT team_id FROM team_members 
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Team admins can remove members"
+CREATE OR REPLACE POLICY "Team admins can remove members"
   ON team_members FOR DELETE
   USING (
-    team_id IN (
-      SELECT team_id FROM team_members 
-      WHERE user_id = auth.uid() AND role = 'admin'
+    user_id = auth.uid()
+    OR team_id IN (
+      SELECT team_id FROM team_members AS tm
+      WHERE tm.user_id = auth.uid()
+        AND tm.role = 'admin'
     )
   );
 
-CREATE POLICY "Team admins can update member roles"
+CREATE OR REPLACE POLICY "Team admins can update member roles"
   ON team_members FOR UPDATE
   USING (
-    team_id IN (
-      SELECT team_id FROM team_members 
-      WHERE user_id = auth.uid() AND role = 'admin'
+    user_id = auth.uid()
+    OR team_id IN (
+      SELECT team_id FROM team_members AS tm
+      WHERE tm.user_id = auth.uid()
+        AND tm.role = 'admin'
     )
   );
+
 
 -- RLS Policies for team_players
 CREATE POLICY "Team members can view players"
@@ -294,6 +299,35 @@ CREATE POLICY "Team admins can delete player requests"
     )
   );
 
+-- RLS Policies for team_invite_links
+CREATE POLICY "Team members can view invite links"
+  ON team_invite_links FOR SELECT
+  USING (
+    team_id IN (
+      SELECT team_id FROM team_members WHERE user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Team admins can create invite links"
+  ON team_invite_links FOR INSERT
+  WITH CHECK (
+    team_id IN (
+      SELECT team_id FROM team_members
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
+
+
+CREATE POLICY "Team admins can delete invite links"
+  ON team_invite_links FOR DELETE
+  USING (
+    team_id IN (
+      SELECT team_id FROM team_members
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
+
+
 -- Create function to update team stats when game is approved
 CREATE OR REPLACE FUNCTION update_team_player_stats()
 RETURNS TRIGGER AS $$
@@ -339,3 +373,4 @@ CREATE INDEX IF NOT EXISTS idx_team_players_team_id ON team_players(team_id);
 CREATE INDEX IF NOT EXISTS idx_team_game_results_team_id ON team_game_results(team_id);
 CREATE INDEX IF NOT EXISTS idx_team_game_results_status ON team_game_results(status);
 CREATE INDEX IF NOT EXISTS idx_team_player_requests_team_id ON team_player_requests(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_invite_links_expires_at ON team_invite_links(expires_at);

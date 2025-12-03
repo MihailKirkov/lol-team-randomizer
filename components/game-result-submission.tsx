@@ -93,7 +93,7 @@ export function GameResultSubmission({ teams }: GameResultSubmissionProps) {
             <Button
               onClick={() => handleSubmitResult(0)}
               disabled={submitting}
-              className="h-14 bg-gradient-to-r from-blue-500/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-600 neon-glow-blue group transition-all duration-200 hover:scale-[1.02]"
+              className="h-14 bg-linear-to-r from-blue-500/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-600 neon-glow-blue group transition-all duration-200 hover:scale-[1.02]"
             >
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -107,7 +107,7 @@ export function GameResultSubmission({ teams }: GameResultSubmissionProps) {
             <Button
               onClick={() => handleSubmitResult(1)}
               disabled={submitting}
-              className="h-14 bg-gradient-to-r from-red-500/80 to-red-600/80 hover:from-red-500 hover:to-red-600 neon-glow-red group transition-all duration-200 hover:scale-[1.02]"
+              className="h-14 bg-linear-to-r from-red-500/80 to-red-600/80 hover:from-red-500 hover:to-red-600 neon-glow-red group transition-all duration-200 hover:scale-[1.02]"
             >
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
