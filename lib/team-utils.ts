@@ -33,7 +33,7 @@ function getAllowedRoles(name: string, conditions: PlayerCondition[]): Role[] {
 }
 
 /* -------------------------------------------------------------
-   Core Role Assignment Engine
+   Basic assignment (used by all public functions)
 ------------------------------------------------------------- */
 
 interface AssignOptions {
@@ -76,7 +76,32 @@ function assignRolesToStates(
 }
 
 /* -------------------------------------------------------------
-   PUBLIC API (Your original function names)
+   Strict Derangement Assignment (Backtracking Solver)
+------------------------------------------------------------- */
+
+function tryDerangementAssign(
+  players: PlayerState[],
+  conditions: PlayerCondition[],
+  maxAttempts = 30
+): Player[] {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const assigned = assignRolesToStates(players, conditions, { avoidCurrentRole: true })
+
+    const invalid = assigned.some(a => {
+      const prev = players.find(p => p.name === a.name)?.currentRole
+      return prev && prev === a.role
+    })
+
+    if (!invalid) {
+      return assigned
+    }
+  }
+
+  throw new Error("Derangement impossible with current constraints.")
+}
+
+/* -------------------------------------------------------------
+   PUBLIC API (Your required function names)
 ------------------------------------------------------------- */
 
 export function generateTeams(
@@ -102,10 +127,6 @@ export function generateTeams(
   ]
 }
 
-/* -------------------------------------------------------------
-   Randomize roles but keep teams intact
-------------------------------------------------------------- */
-
 export function randomizeRoles(
   teams: Team[],
   conditions: PlayerCondition[],
@@ -124,10 +145,6 @@ export function randomizeRoles(
     }
   })
 }
-
-/* -------------------------------------------------------------
-   Randomize teams but keep roles
-------------------------------------------------------------- */
 
 export function randomizeTeams(
   teams: Team[],
@@ -153,13 +170,36 @@ export function randomizeTeams(
 }
 
 /* -------------------------------------------------------------
-   Randomize both
+   Randomize both teams and roles (strict derangement)
 ------------------------------------------------------------- */
 
 export function randomizeBoth(
   playerNames: string[],
   conditions: PlayerCondition[],
-  lockedPlayers: Set<string>
+  lockedPlayers: Set<string>,
+  previousTeams?: Team[]
 ): Team[] {
-  return generateTeams(playerNames, conditions, lockedPlayers)
+  // Step 1: randomize team compositions normally
+  const newTeams = generateTeams(playerNames, conditions, lockedPlayers)
+
+  // no previous data = no derangement needed
+  if (!previousTeams) return newTeams
+
+  // Step 2: build previous role map
+  const prevRoleMap = new Map<string, Role>()
+  previousTeams.flatMap(t => t.players).forEach(p => {
+    prevRoleMap.set(p.name, p.role)
+  })
+
+  // Step 3: derangement logic per team
+  return newTeams.map(team => {
+    const state: PlayerState[] = team.players.map(p => ({
+      name: p.name,
+      locked: lockedPlayers.has(p.name),
+      excludedRoles: conditions.find(c => c.playerName === p.name)?.excludedRoles || [],
+      currentRole: prevRoleMap.get(p.name)
+    }))
+
+    return { players: tryDerangementAssign(state, conditions) }
+  })
 }

@@ -2,21 +2,21 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Shuffle, Users, Award, Copy } from "lucide-react" // ⬅️ changed Download → Copy
+import { Shuffle, Users, Award, Copy } from "lucide-react" 
 import { motion } from "framer-motion"
 
 interface RandomizeControlsProps {
   onRandomizeTeams: () => void
   onRandomizeRoles: () => void
   onRandomizeBoth: () => void
-  onExport: () => void
+  onCopy: () => void
 }
 
 export function RandomizeControls({
   onRandomizeTeams,
   onRandomizeRoles,
   onRandomizeBoth,
-  onExport,
+  onCopy,
 }: RandomizeControlsProps) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -54,7 +54,7 @@ export function RandomizeControls({
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
-              onClick={onExport}
+              onClick={onCopy}
               variant="outline"
               className="w-full gap-2 border-muted-foreground/50 hover:border-foreground hover:bg-secondary bg-transparent transition-all duration-300 hover:shadow-lg group"
             >

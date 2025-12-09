@@ -55,11 +55,23 @@ describe("team-utils", () => {
     expect(rolesAfter).toEqual(rolesBefore)
   })
 
-  test("randomizeBoth produces fresh teams", () => {
-    const t1 = generateTeams(names, conditions)
-    const t2 = randomizeBoth(names, conditions, new Set())
+test("randomizeBoth switches every role", () => {
+  const oldTeams = generateTeams(names, conditions)
 
-    expect(t1.length).toBe(2)
-    expect(t2.length).toBe(2)
+  const newTeams = randomizeBoth(
+    names,
+    conditions,
+    new Set(),
+    oldTeams
+  )
+
+  const oldMap = new Map()
+  oldTeams.flatMap(t => t.players).forEach(p => oldMap.set(p.name, p.role))
+
+  newTeams.flatMap(t => t.players).forEach(p => {
+    expect(p.role).not.toBe(oldMap.get(p.name))
   })
+})
+
+
 })

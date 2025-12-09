@@ -5,13 +5,14 @@ import { TeamDisplay } from "@/components/team-display"
 import { RandomizeControls } from "@/components/randomize-controls"
 import { ConditionsModal } from "@/components/conditions-modal"
 import { generateTeams, randomizeRoles, randomizeBoth, randomizeTeams } from "@/lib/team-utils"
-import type { PlayerCondition, Team } from "@/lib/types"
+import { ROLES, type PlayerCondition, type Team } from "@/lib/types"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Sparkles, ArrowLeft, Info } from "lucide-react"
 import Link from "next/link"
 import { showToast } from "@/lib/toast"
+import { useTeamRandomizer } from "@/hooks/useTeamRandomizer"
 
 export default function GuestModePage() {
   const [playerInput, setPlayerInput] = useState("")
@@ -26,29 +27,13 @@ export default function GuestModePage() {
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
 
-  const handleGenerateTeams = () => {
-    if (players.length < 10) return
-    const newTeams = generateTeams(players, conditions)
-    setTeams(newTeams)
-  }
-
-  const handleRandomizeTeams = () => {
-    if (!teams) return
-    const newTeams = randomizeTeams(teams, lockedPlayers)
-    setTeams(newTeams)
-  }
-
-  const handleRandomizeRoles = () => {
-    if (!teams) return
-    const newTeams = randomizeRoles(teams, conditions, lockedPlayers)
-    setTeams(newTeams)
-  }
-
-  const handleRandomizeBoth = () => {
-    if (!teams) return
-    const newTeams = randomizeBoth(players, conditions, lockedPlayers)
-    setTeams(newTeams)
-  }
+    
+  const {
+    generate,
+    randomizeTeamsHandler,
+    randomizeRolesHandler,
+    randomizeBothHandler
+  } = useTeamRandomizer(players, conditions, teams, setTeams, lockedPlayers)
 
   const handleToggleLock = (playerName: string) => {
     const newLocked = new Set(lockedPlayers)
@@ -60,14 +45,51 @@ export default function GuestModePage() {
     setLockedPlayers(newLocked)
   }
 
-  const handleExport = () => {
-    if (!teams) return
-    const text = teams
-      .map((team, idx) => `Team ${idx + 1}:\n${team.players.map((p) => `  ${p.role}: ${p.name}`).join("\n")}`)
-      .join("\n\n")
-    navigator.clipboard.writeText(text)
-    showToast("SUCCESS","Teams copied to clipboard!")
-  }
+const handleCopy = () => {
+  if (!teams) return
+
+  const team1 = teams[0].players
+  const team2 = teams[1].players
+
+  // sort players by role order (Top, Jungle, Mid, ADC, Support)
+  const orderedRoles = ROLES
+  const getPlayerForRole = (team, role) =>
+    team.find(p => p.role === role)?.name || ""
+
+  // determine padding for clean alignment
+  const longestTeam1 = Math.max(...team1.map(p => p.name.length))
+  const longestTeam2 = Math.max(...team2.map(p => p.name.length))
+
+  const header =
+    "Role".padEnd(8) +
+    " | " +
+    "Team 1".padEnd(longestTeam1) +
+    " | " +
+    "Team 2".padEnd(longestTeam2)
+
+  const separator = "-".repeat(header.length)
+
+  const rows = orderedRoles
+    .map(role => {
+      const p1 = getPlayerForRole(team1, role).padEnd(longestTeam1)
+      const p2 = getPlayerForRole(team2, role).padEnd(longestTeam2)
+
+      return (
+        role.padEnd(8) +
+        " | " +
+        p1 +
+        " | " +
+        p2
+      )
+    })
+    .join("\n")
+
+  const text = `${header}\n${separator}\n${rows}`
+
+  navigator.clipboard.writeText(text)
+  showToast("SUCCESS", "Teams copied to clipboard!")
+}
+
 
   const canGenerate = players.length >= 10
 
@@ -153,7 +175,7 @@ Player3"
 
             <div className="flex items-center justify-center gap-4">
               <Button
-                onClick={handleGenerateTeams}
+                onClick={generate}
                 disabled={!canGenerate}
                 className="bg-neon-cyan text-primary-foreground hover:bg-neon-cyan/90 neon-glow font-semibold text-lg h-12 px-8 disabled:opacity-50 hover:scale-[1.02] transition-all duration-200 group"
               >
@@ -177,12 +199,11 @@ Player3"
           <>
             <TeamDisplay teams={teams} lockedPlayers={lockedPlayers} onToggleLock={handleToggleLock} />
 
-            {/* Randomize Controls */}
             <RandomizeControls
-              onRandomizeTeams={handleRandomizeTeams}
-              onRandomizeRoles={handleRandomizeRoles}
-              onRandomizeBoth={handleRandomizeBoth}
-              onExport={handleExport}
+              onRandomizeTeams={randomizeTeamsHandler}
+              onRandomizeRoles={randomizeRolesHandler}
+              onRandomizeBoth={randomizeBothHandler}
+              onCopy={handleCopy}
             />
 
             {/* Reset Button */}
