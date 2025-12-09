@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { Sparkles, Users, Shield, TrendingUp, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react"
+import { PlayerCondition, Team } from "@/lib/types"
+import { generateTeams, randomizeBoth, randomizeRoles, randomizeTeams } from "@/lib/team-utils"
 
-export default function LandingPage() {
+
+export default function Page() {
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}

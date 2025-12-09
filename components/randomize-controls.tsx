@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Shuffle, Users, Award, Download } from "lucide-react"
+import { Shuffle, Users, Award, Copy } from "lucide-react" // ⬅️ changed Download → Copy
 import { motion } from "framer-motion"
 
 interface RandomizeControlsProps {
@@ -58,8 +58,8 @@ export function RandomizeControls({
               variant="outline"
               className="w-full gap-2 border-muted-foreground/50 hover:border-foreground hover:bg-secondary bg-transparent transition-all duration-300 hover:shadow-lg group"
             >
-              <Download className="h-4 w-4 group-hover:translate-y-1 transition-transform duration-200" />
-              Export
+              <Copy className="h-4 w-4 group-hover:translate-y-0.5 transition-transform duration-200" />
+              Copy
             </Button>
           </motion.div>
         </div>

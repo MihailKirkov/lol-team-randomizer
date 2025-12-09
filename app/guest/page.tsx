@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Sparkles, ArrowLeft, Info } from "lucide-react"
 import Link from "next/link"
+import { showToast } from "@/lib/toast"
 
 export default function GuestModePage() {
   const [playerInput, setPlayerInput] = useState("")
@@ -65,7 +66,7 @@ export default function GuestModePage() {
       .map((team, idx) => `Team ${idx + 1}:\n${team.players.map((p) => `  ${p.role}: ${p.name}`).join("\n")}`)
       .join("\n\n")
     navigator.clipboard.writeText(text)
-    alert("Teams copied to clipboard!")
+    showToast("SUCCESS","Teams copied to clipboard!")
   }
 
   const canGenerate = players.length >= 10

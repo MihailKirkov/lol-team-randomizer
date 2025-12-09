@@ -1,6 +1,9 @@
+export const ROLES = ["Top", "Jungle", "Mid", "ADC", "Support"] as const
+export type Role = typeof ROLES[number]
+
 export interface Player {
   name: string
-  role: string
+  role: Role
   alias?: string
 }
 
@@ -10,5 +13,12 @@ export interface Team {
 
 export interface PlayerCondition {
   playerName: string
-  excludedRoles: string[]
+  excludedRoles: Role[]
+}
+
+export interface PlayerState {
+  name: string
+  locked: boolean
+  excludedRoles: Role[]
+  currentRole?: Role
 }
